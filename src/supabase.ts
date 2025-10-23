@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Configuration Supabase
-const supabaseUrl = 'https://rotopdjqqqiizfslhpjg.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvdG9wZGpxcXFpaXpmc2xocGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTE3MTcsImV4cCI6MjA3NjEyNzcxN30.SJ_Y8Jmfp1Og1p0L39HzRJEqVl_HYXFSL8B9hvDKP5w'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ighzyizvcvebqlhowikk.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnaHp5aXp2Y3ZlYnFsaG93aWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzQ4MDAsImV4cCI6MjA1MDU1MDgwMH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'
 
 // Créer le client Supabase
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -171,6 +171,21 @@ export interface Notification {
 
 // Fonctions pour les utilisateurs
 export const userService = {
+  // Récupérer tous les utilisateurs (pour l'admin)
+  async getAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all users:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
   // Récupérer un utilisateur par ID
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabase
@@ -290,11 +305,57 @@ export const userService = {
     }
     
     return true
+  },
+
+  // Supprimer un utilisateur
+  async deleteUser(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting user:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  // Rechercher des utilisateurs
+  async searchUsers(query: string): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .or(`email.ilike.%${query}%,username.ilike.%${query}%,full_name.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error searching users:', error)
+      return []
+    }
+    
+    return data || []
   }
 }
 
 // Fonctions pour les catégories
 export const categoryService = {
+  // Récupérer toutes les catégories (pour l'admin)
+  async getAllCategories(): Promise<Category[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order')
+    
+    if (error) {
+      console.error('Error fetching all categories:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
   // Récupérer toutes les catégories actives
   async getActiveCategories(): Promise<Category[]> {
     const { data, error } = await supabase
@@ -309,6 +370,22 @@ export const categoryService = {
     }
     
     return data || []
+  },
+
+  // Récupérer une catégorie par ID
+  async getCategoryById(id: string): Promise<Category | null> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching category by ID:', error)
+      return null
+    }
+    
+    return data
   },
 
   // Récupérer une catégorie par slug
@@ -326,11 +403,77 @@ export const categoryService = {
     }
     
     return data
+  },
+
+  // Créer une nouvelle catégorie
+  async createCategory(categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category | null> {
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([categoryData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating category:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour une catégorie
+  async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
+    const { data, error } = await supabase
+      .from('categories')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating category:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer une catégorie
+  async deleteCategory(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting category:', error)
+      return false
+    }
+    
+    return true
   }
 }
 
 // Fonctions pour les produits
 export const productService = {
+  // Récupérer tous les produits (pour l'admin)
+  async getAllProducts(): Promise<Product[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories(name, slug)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all products:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
   // Récupérer les produits d'une catégorie
   async getProductsByCategory(categoryId: string): Promise<Product[]> {
     const { data, error } = await supabase
@@ -362,11 +505,112 @@ export const productService = {
     }
     
     return data || []
+  },
+
+  // Récupérer un produit par ID
+  async getProductById(id: string): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories(name, slug)
+      `)
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching product by ID:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Créer un nouveau produit
+  async createProduct(productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([productData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating product:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour un produit
+  async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating product:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer un produit
+  async deleteProduct(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting product:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  // Rechercher des produits
+  async searchProducts(query: string): Promise<Product[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories(name, slug)
+      `)
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error searching products:', error)
+      return []
+    }
+    
+    return data || []
   }
 }
 
 // Fonctions pour les cours
 export const courseService = {
+  // Récupérer tous les cours (pour l'admin)
+  async getAllCourses(): Promise<Course[]> {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('sort_order')
+    
+    if (error) {
+      console.error('Error fetching all courses:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
   // Récupérer tous les cours actifs
   async getActiveCourses(): Promise<Course[]> {
     const { data, error } = await supabase
@@ -381,6 +625,22 @@ export const courseService = {
     }
     
     return data || []
+  },
+
+  // Récupérer un cours par ID
+  async getCourseById(id: string): Promise<Course | null> {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching course by ID:', error)
+      return null
+    }
+    
+    return data
   },
 
   // Récupérer les cours d'un utilisateur
@@ -403,6 +663,54 @@ export const courseService = {
       ...course,
       progress: course.user_course_progress?.[0] || null
     })) || []
+  },
+
+  // Créer un nouveau cours
+  async createCourse(courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>): Promise<Course | null> {
+    const { data, error } = await supabase
+      .from('courses')
+      .insert([courseData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating course:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour un cours
+  async updateCourse(id: string, updates: Partial<Course>): Promise<Course | null> {
+    const { data, error } = await supabase
+      .from('courses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating course:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer un cours
+  async deleteCourse(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting course:', error)
+      return false
+    }
+    
+    return true
   },
 
   // Mettre à jour le progrès d'un cours
@@ -514,6 +822,85 @@ export const activityService = {
 
 // Fonctions pour les récompenses
 export const rewardService = {
+  // Récupérer toutes les récompenses (pour l'admin)
+  async getAllRewards(): Promise<Reward[]> {
+    const { data, error } = await supabase
+      .from('rewards')
+      .select('*')
+      .order('xp_required')
+    
+    if (error) {
+      console.error('Error fetching all rewards:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer une récompense par ID
+  async getRewardById(id: string): Promise<Reward | null> {
+    const { data, error } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching reward by ID:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Créer une nouvelle récompense
+  async createReward(rewardData: Omit<Reward, 'id' | 'created_at' | 'updated_at'>): Promise<Reward | null> {
+    const { data, error } = await supabase
+      .from('rewards')
+      .insert([rewardData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating reward:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour une récompense
+  async updateReward(id: string, updates: Partial<Reward>): Promise<Reward | null> {
+    const { data, error } = await supabase
+      .from('rewards')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating reward:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer une récompense
+  async deleteReward(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('rewards')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting reward:', error)
+      return false
+    }
+    
+    return true
+  },
+
   // Récupérer les récompenses d'un utilisateur
   async getUserRewards(userId: string): Promise<Reward[]> {
     const { data, error } = await supabase
@@ -615,6 +1002,24 @@ export const notificationService = {
 
 // Fonctions pour les témoignages
 export const testimonialService = {
+  // Récupérer tous les témoignages (pour l'admin)
+  async getAllTestimonials(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('testimonials')
+      .select(`
+        *,
+        users(full_name, username)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all testimonials:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
   // Récupérer tous les témoignages actifs
   async getActiveTestimonials(limit: number = 10): Promise<any[]> {
     const { data, error } = await supabase
@@ -630,6 +1035,171 @@ export const testimonialService = {
     }
     
     return data || []
+  },
+
+  // Récupérer un témoignage par ID
+  async getTestimonialById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('testimonials')
+      .select(`
+        *,
+        users(full_name, username)
+      `)
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching testimonial by ID:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Créer un nouveau témoignage
+  async createTestimonial(testimonialData: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('testimonials')
+      .insert([testimonialData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating testimonial:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour un témoignage
+  async updateTestimonial(id: string, updates: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('testimonials')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating testimonial:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer un témoignage
+  async deleteTestimonial(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('testimonials')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting testimonial:', error)
+      return false
+    }
+    
+    return true
+  }
+}
+
+// Fonctions pour les annonces
+export const announcementService = {
+  // Récupérer toutes les annonces (pour l'admin)
+  async getAllAnnouncements(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all announcements:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les annonces actives
+  async getActiveAnnouncements(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching active announcements:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer une annonce par ID
+  async getAnnouncementById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching announcement by ID:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Créer une nouvelle annonce
+  async createAnnouncement(announcementData: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('announcements')
+      .insert([announcementData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating announcement:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour une annonce
+  async updateAnnouncement(id: string, updates: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('announcements')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating announcement:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Supprimer une annonce
+  async deleteAnnouncement(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('announcements')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting announcement:', error)
+      return false
+    }
+    
+    return true
   }
 }
 
@@ -779,6 +1349,233 @@ export const authService = {
   // Écouter les changements d'authentification
   onAuthStateChange(callback: (event: string, session: any) => void) {
     return supabase.auth.onAuthStateChange(callback)
+  }
+}
+
+// Fonctions pour les transactions
+export const transactionService = {
+  // Récupérer toutes les transactions (pour l'admin)
+  async getAllTransactions(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .select(`
+        *,
+        users(full_name, username, email)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all transactions:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les transactions d'un utilisateur
+  async getUserTransactions(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching user transactions:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Créer une nouvelle transaction
+  async createTransaction(transactionData: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .insert([transactionData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating transaction:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour le statut d'une transaction
+  async updateTransactionStatus(id: string, status: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('wallet_transactions')
+      .update({ 
+        status,
+        completed_at: status === 'completed' ? new Date().toISOString() : null
+      })
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error updating transaction status:', error)
+      return false
+    }
+    
+    return true
+  }
+}
+
+// Fonctions pour les activités
+export const activityService = {
+  // Récupérer toutes les activités (pour l'admin)
+  async getAllActivities(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('user_activities')
+      .select(`
+        *,
+        users(full_name, username),
+        products(name),
+        categories(name)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all activities:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les activités d'un utilisateur
+  async getUserActivities(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('user_activities')
+      .select(`
+        *,
+        products(name),
+        categories(name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching user activities:', error)
+      return []
+    }
+    
+    return data || []
+  }
+}
+
+// Fonctions pour les parrainages
+export const referralService = {
+  // Récupérer tous les parrainages (pour l'admin)
+  async getAllReferrals(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('referrals')
+      .select(`
+        *,
+        users!referrals_referrer_id_fkey(full_name, username, email)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all referrals:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les parrainages d'un utilisateur
+  async getUserReferrals(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('*')
+      .eq('referrer_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching user referrals:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Mettre à jour le statut d'un parrainage
+  async updateReferralStatus(id: string, status: string): Promise<boolean> {
+    const updateData: any = { status }
+    
+    if (status === 'accepted') {
+      updateData.accepted_at = new Date().toISOString()
+    } else if (status === 'completed') {
+      updateData.completed_at = new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('referrals')
+      .update(updateData)
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error updating referral status:', error)
+      return false
+    }
+    
+    return true
+  }
+}
+
+// Fonctions pour les statistiques globales
+export const statsService = {
+  // Récupérer les statistiques générales
+  async getGeneralStats(): Promise<any> {
+    const [usersResult, productsResult, categoriesResult, coursesResult] = await Promise.all([
+      supabase.from('users').select('id', { count: 'exact' }),
+      supabase.from('products').select('id', { count: 'exact' }),
+      supabase.from('categories').select('id', { count: 'exact' }),
+      supabase.from('courses').select('id', { count: 'exact' })
+    ])
+
+    const [totalEarningsResult, totalXPResult] = await Promise.all([
+      supabase.from('users').select('total_earnings').not('total_earnings', 'is', null),
+      supabase.from('users').select('total_xp').not('total_xp', 'is', null)
+    ])
+
+    const totalEarnings = totalEarningsResult.data?.reduce((sum, user) => sum + (user.total_earnings || 0), 0) || 0
+    const totalXP = totalXPResult.data?.reduce((sum, user) => sum + (user.total_xp || 0), 0) || 0
+
+    return {
+      totalUsers: usersResult.count || 0,
+      totalProducts: productsResult.count || 0,
+      totalCategories: categoriesResult.count || 0,
+      totalCourses: coursesResult.count || 0,
+      totalEarnings,
+      totalXP
+    }
+  },
+
+  // Récupérer les statistiques des utilisateurs par tier
+  async getUserStatsByTier(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('tier')
+      .not('tier', 'is', null)
+    
+    if (error) {
+      console.error('Error fetching user stats by tier:', error)
+      return []
+    }
+
+    const tierCounts = data?.reduce((acc, user) => {
+      acc[user.tier] = (acc[user.tier] || 0) + 1
+      return acc
+    }, {} as Record<string, number>) || {}
+
+    return Object.entries(tierCounts).map(([tier, count]) => ({
+      tier,
+      count
+    }))
   }
 }
 

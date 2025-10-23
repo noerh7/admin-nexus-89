@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, Package, TrendingUp } from "lucide-react";
+import { Users, DollarSign, Package, TrendingUp, Loader2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -11,37 +12,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { statsService, activityService } from "@/supabase";
 
-const stats = [
-  {
-    title: "Total Users",
-    value: "12,345",
-    change: "+12.5%",
-    icon: Users,
-    color: "text-chart-1",
-  },
-  {
-    title: "Total Earnings",
-    value: "$54,321",
-    change: "+8.2%",
-    icon: DollarSign,
-    color: "text-chart-2",
-  },
-  {
-    title: "Active Products",
-    value: "234",
-    change: "+4.3%",
-    icon: Package,
-    color: "text-chart-3",
-  },
-  {
-    title: "Avg Conversion",
-    value: "3.8%",
-    change: "+0.5%",
-    icon: TrendingUp,
-    color: "text-chart-4",
-  },
-];
+// Interface pour les statistiques
+interface DashboardStats {
+  totalUsers: number;
+  totalProducts: number;
+  totalCategories: number;
+  totalCourses: number;
+  totalEarnings: number;
+  totalXP: number;
+}
 
 const revenueData = [
   { month: "Jan", revenue: 4000, users: 240 },
@@ -60,6 +41,63 @@ const activityData = [
 ];
 
 export default function Dashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [generalStats, activities] = await Promise.all([
+        statsService.getGeneralStats(),
+        activityService.getAllActivities()
+      ]);
+      
+      setStats(generalStats);
+      // Prendre les 5 dernières activités
+      setRecentActivities(activities.slice(0, 5));
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statsCards = [
+    {
+      title: "Total Users",
+      value: stats?.totalUsers.toLocaleString() || "0",
+      change: "+12.5%",
+      icon: Users,
+      color: "text-chart-1",
+    },
+    {
+      title: "Total Earnings",
+      value: `$${stats?.totalEarnings.toLocaleString() || "0"}`,
+      change: "+8.2%",
+      icon: DollarSign,
+      color: "text-chart-2",
+    },
+    {
+      title: "Active Products",
+      value: stats?.totalProducts.toLocaleString() || "0",
+      change: "+4.3%",
+      icon: Package,
+      color: "text-chart-3",
+    },
+    {
+      title: "Total XP",
+      value: stats?.totalXP.toLocaleString() || "0",
+      change: "+0.5%",
+      icon: TrendingUp,
+      color: "text-chart-4",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -68,22 +106,39 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-success">
-                {stat.change} from last month
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        {loading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Chargement...
+                </CardTitle>
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">-</div>
+                <p className="text-xs text-muted-foreground">Chargement...</p>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          statsCards.map((stat) => (
+            <Card key={stat.title}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-success">
+                  {stat.change} from last month
+                </p>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -143,20 +198,30 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { user: "John Doe", action: "Completed a course", time: "2 minutes ago" },
-              { user: "Jane Smith", action: "Made a conversion", time: "5 minutes ago" },
-              { user: "Bob Johnson", action: "Earned 500 XP", time: "10 minutes ago" },
-              { user: "Alice Williams", action: "Referred a friend", time: "15 minutes ago" },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between border-b border-border pb-3 last:border-0">
-                <div>
-                  <p className="font-medium">{activity.user}</p>
-                  <p className="text-sm text-muted-foreground">{activity.action}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">{activity.time}</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <p className="ml-2 text-muted-foreground">Chargement des activités...</p>
               </div>
-            ))}
+            ) : recentActivities.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Aucune activité récente</p>
+            ) : (
+              recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between border-b border-border pb-3 last:border-0">
+                  <div>
+                    <p className="font-medium">
+                      {activity.users?.full_name || "Utilisateur inconnu"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {activity.activity_type} - {activity.xp_earned} XP
+                    </p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(activity.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
