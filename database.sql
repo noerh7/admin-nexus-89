@@ -70,6 +70,19 @@ CREATE TABLE public.daily_streaks (
   CONSTRAINT daily_streaks_pkey PRIMARY KEY (id),
   CONSTRAINT daily_streaks_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.navigation_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  item_id character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  icon_name character varying NOT NULL,
+  route character varying NOT NULL,
+  is_active boolean DEFAULT true,
+  sort_order integer DEFAULT 0,
+  nav_type character varying DEFAULT 'main'::character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT navigation_items_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.notifications (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid,
