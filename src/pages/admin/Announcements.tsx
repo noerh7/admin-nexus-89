@@ -79,6 +79,16 @@ export default function Announcements() {
     error: { icon: AlertCircle, color: "bg-red-500/10 text-red-500" },
   };
 
+  // Calculer le nombre d'annonces actives
+  const activeAnnouncementsCount = announcements.filter(announcement => 
+    announcement.is_active
+  ).length;
+
+  // Calculer le total des vues
+  const totalViews = announcements.reduce((total, announcement) => 
+    total + (announcement.views || 0), 0
+  );
+
   useEffect(() => {
     loadAnnouncements();
   }, []);
@@ -213,7 +223,7 @@ export default function Announcements() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Active</p>
-              <p className="text-2xl font-bold">3</p>
+              <p className="text-2xl font-bold">{activeAnnouncementsCount}</p>
             </div>
           </div>
         </Card>
@@ -224,7 +234,7 @@ export default function Announcements() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Views</p>
-              <p className="text-2xl font-bold">7,440</p>
+              <p className="text-2xl font-bold">{totalViews.toLocaleString()}</p>
             </div>
           </div>
         </Card>
@@ -234,8 +244,8 @@ export default function Announcements() {
               <Bell className="h-6 w-6 text-admin-success" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Avg. Engagement</p>
-              <p className="text-2xl font-bold">68%</p>
+              <p className="text-sm text-muted-foreground">Total Announcements</p>
+              <p className="text-2xl font-bold">{announcements.length}</p>
             </div>
           </div>
         </Card>
@@ -267,7 +277,7 @@ export default function Announcements() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {announcements.map((announcement) => {
+            {filteredAnnouncements.map((announcement) => {
               const typeInfo = typeIcons[announcement.type as keyof typeof typeIcons];
               const Icon = typeInfo.icon;
               return (
