@@ -817,6 +817,46 @@ export const activityService = {
     }
     
     return true
+  },
+
+  // Récupérer toutes les activités (pour l'admin)
+  async getAllActivities(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('user_activities')
+      .select(`
+        *,
+        users(full_name, username),
+        products(name),
+        categories(name)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all activities:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les activités d'un utilisateur
+  async getUserActivities(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('user_activities')
+      .select(`
+        *,
+        products(name),
+        categories(name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching user activities:', error)
+      return []
+    }
+    
+    return data || []
   }
 }
 
@@ -1423,48 +1463,6 @@ export const transactionService = {
   }
 }
 
-// Fonctions pour les activités
-export const activityService = {
-  // Récupérer toutes les activités (pour l'admin)
-  async getAllActivities(): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('user_activities')
-      .select(`
-        *,
-        users(full_name, username),
-        products(name),
-        categories(name)
-      `)
-      .order('created_at', { ascending: false })
-    
-    if (error) {
-      console.error('Error fetching all activities:', error)
-      return []
-    }
-    
-    return data || []
-  },
-
-  // Récupérer les activités d'un utilisateur
-  async getUserActivities(userId: string): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('user_activities')
-      .select(`
-        *,
-        products(name),
-        categories(name)
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    
-    if (error) {
-      console.error('Error fetching user activities:', error)
-      return []
-    }
-    
-    return data || []
-  }
-}
 
 // Fonctions pour les parrainages
 export const referralService = {
