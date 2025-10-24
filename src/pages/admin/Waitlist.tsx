@@ -7,9 +7,166 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Download, Mail, CheckCircle, Clock, UserPlus, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { waitlistService, WaitlistEntry } from "@/supabase";
+import { createClient } from '@supabase/supabase-js'
 
-// Interface WaitlistEntry est maintenant importée depuis @/supabase
+// Configuration Supabase simplifiée
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ighzyizvcvebqlhowikk.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnaHp5aXp2Y3ZlYnFsaG93aWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzQ4MDAsImV4cCI6MjA1MDU1MDgwMH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Interface WaitlistEntry
+interface WaitlistEntry {
+  id: string
+  email: string
+  status: 'pending' | 'notified' | 'converted'
+  source: string
+  metadata: any
+  created_at: string
+  updated_at: string
+}
+
+// Service Supabase intégré directement
+const waitlistService = {
+  async getAllWaitlistEntries(): Promise<WaitlistEntry[]> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all waitlist entries:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  async getWaitlistEntryById(id: string): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  async getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .eq('email', email)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching waitlist entry by email:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  async createWaitlistEntry(entryData: Omit<WaitlistEntry, 'id' | 'created_at' | 'updated_at'>): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .insert([entryData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  async updateWaitlistEntry(id: string, updates: Partial<WaitlistEntry>): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  async updateWaitlistStatus(id: string, status: 'pending' | 'notified' | 'converted'): Promise<boolean> {
+    const { error } = await supabase
+      .from('waitlist')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error updating waitlist status:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  async deleteWaitlistEntry(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('waitlist')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting waitlist entry:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  async searchWaitlistEntries(query: string): Promise<WaitlistEntry[]> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .ilike('email', `%${query}%`)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error searching waitlist entries:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  async getWaitlistStats(): Promise<any> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('status')
+    
+    if (error) {
+      console.error('Error fetching waitlist stats:', error)
+      return { total: 0, pending: 0, notified: 0, converted: 0 }
+    }
+
+    const stats = data?.reduce((acc, entry) => {
+      acc.total++
+      acc[entry.status]++
+      return acc
+    }, { total: 0, pending: 0, notified: 0, converted: 0 }) || { total: 0, pending: 0, notified: 0, converted: 0 }
+
+    return stats
+  }
+}
 
 const statusConfig = {
   pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -34,7 +191,6 @@ export default function Waitlist() {
         const entries = await waitlistService.getAllWaitlistEntries();
         setWaitlistEntries(entries);
         
-        // Afficher un message de succès si c'est la première fois
         if (entries.length > 0) {
           toast({
             title: "Données chargées",
@@ -95,11 +251,6 @@ export default function Waitlist() {
     } finally {
       setIsSearching(false);
     }
-  };
-
-  // Fonction pour gérer les changements de filtres
-  const handleFilterChange = () => {
-    // Les filtres sont appliqués côté client, pas besoin de recharger
   };
 
   // Appliquer les filtres côté client pour les données déjà chargées
@@ -350,7 +501,6 @@ export default function Waitlist() {
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
-                    // Délai pour éviter trop de requêtes
                     const timeoutId = setTimeout(() => {
                       handleSearch(e.target.value);
                     }, 500);
@@ -365,10 +515,7 @@ export default function Waitlist() {
                 )}
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={(value) => {
-              setStatusFilter(value);
-              handleFilterChange();
-            }}>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
@@ -379,10 +526,7 @@ export default function Waitlist() {
                 <SelectItem value="converted">Converti</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sourceFilter} onValueChange={(value) => {
-              setSourceFilter(value);
-              handleFilterChange();
-            }}>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filtrer par source" />
               </SelectTrigger>
@@ -398,18 +542,18 @@ export default function Waitlist() {
       </Card>
 
       {/* Tableau des waitlists */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Liste des inscriptions ({filteredEntries.length})</CardTitle>
-            <CardDescription>
-              Gérez les inscriptions en liste d'attente et mettez à jour leur statut
-              {searchTerm && (
-                <span className="block mt-2 text-sm text-blue-600">
-                  Recherche: "{searchTerm}" - {filteredEntries.length} résultat(s)
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
+      <Card>
+        <CardHeader>
+          <CardTitle>Liste des inscriptions ({filteredEntries.length})</CardTitle>
+          <CardDescription>
+            Gérez les inscriptions en liste d'attente et mettez à jour leur statut
+            {searchTerm && (
+              <span className="block mt-2 text-sm text-blue-600">
+                Recherche: "{searchTerm}" - {filteredEntries.length} résultat(s)
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
         <CardContent>
           <div className="rounded-md border">
             <Table>
