@@ -11,8 +11,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Configuration Supabase simplifiée
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ighzyizvcvebqlhowikk.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnaHp5aXp2Y3ZlYnFsaG93aWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzQ4MDAsImV4cCI6MjA1MDU1MDgwMH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvdG9wZGpxcXFpaXpmc2xocGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTE3MTcsImV4cCI6MjA3NjEyNzcxN30.SJ_Y8Jmfp1Og1p0L39HzRJEqVl_HYXFSL8B9hvDKP5wconst supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Interface WaitlistEntry
 interface WaitlistEntry {
