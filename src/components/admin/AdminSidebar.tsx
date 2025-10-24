@@ -11,7 +11,8 @@ import {
   CreditCard,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  List
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const navItems = [
   { name: "Activities", href: "/admin/activities", icon: Activity },
   { name: "Announcements", href: "/admin/announcements", icon: Bell },
   { name: "Referrals", href: "/admin/referrals", icon: UserPlus },
+  { name: "Waitlist", href: "/admin/waitlist", icon: List },
   { name: "Transactions", href: "/admin/transactions", icon: CreditCard },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];

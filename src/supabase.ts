@@ -147,6 +147,16 @@ export interface Referral {
   completed_at?: string
 }
 
+export interface WaitlistEntry {
+  id: string
+  email: string
+  status: 'pending' | 'notified' | 'converted'
+  source: string
+  metadata: any
+  created_at: string
+  updated_at: string
+}
+
 export interface DailyStreak {
   id: string
   user_id: string
@@ -1574,6 +1584,158 @@ export const statsService = {
       tier,
       count
     }))
+  }
+}
+
+// Fonctions pour la waitlist
+export const waitlistService = {
+  // Récupérer toutes les entrées de waitlist
+  async getAllWaitlistEntries(): Promise<WaitlistEntry[]> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching all waitlist entries:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer une entrée de waitlist par ID
+  async getWaitlistEntryById(id: string): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Récupérer une entrée de waitlist par email
+  async getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .eq('email', email)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching waitlist entry by email:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Créer une nouvelle entrée de waitlist
+  async createWaitlistEntry(entryData: Omit<WaitlistEntry, 'id' | 'created_at' | 'updated_at'>): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .insert([entryData])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour une entrée de waitlist
+  async updateWaitlistEntry(id: string, updates: Partial<WaitlistEntry>): Promise<WaitlistEntry | null> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating waitlist entry:', error)
+      return null
+    }
+    
+    return data
+  },
+
+  // Mettre à jour le statut d'une entrée de waitlist
+  async updateWaitlistStatus(id: string, status: 'pending' | 'notified' | 'converted'): Promise<boolean> {
+    const { error } = await supabase
+      .from('waitlist')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error updating waitlist status:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  // Supprimer une entrée de waitlist
+  async deleteWaitlistEntry(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('waitlist')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting waitlist entry:', error)
+      return false
+    }
+    
+    return true
+  },
+
+  // Rechercher des entrées de waitlist
+  async searchWaitlistEntries(query: string): Promise<WaitlistEntry[]> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .ilike('email', `%${query}%`)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error searching waitlist entries:', error)
+      return []
+    }
+    
+    return data || []
+  },
+
+  // Récupérer les statistiques de la waitlist
+  async getWaitlistStats(): Promise<any> {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('status')
+    
+    if (error) {
+      console.error('Error fetching waitlist stats:', error)
+      return { total: 0, pending: 0, notified: 0, converted: 0 }
+    }
+
+    const stats = data?.reduce((acc, entry) => {
+      acc.total++
+      acc[entry.status]++
+      return acc
+    }, { total: 0, pending: 0, notified: 0, converted: 0 }) || { total: 0, pending: 0, notified: 0, converted: 0 }
+
+    return stats
   }
 }
 

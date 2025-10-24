@@ -15,6 +15,7 @@ import Rewards from "./pages/admin/Rewards";
 import Activities from "./pages/admin/Activities";
 import Announcements from "./pages/admin/Announcements";
 import Referrals from "./pages/admin/Referrals";
+import Waitlist from "./pages/admin/Waitlist";
 import Transactions from "./pages/admin/Transactions";
 import Settings from "./pages/admin/Settings";
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="activities" element={<Activities />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="referrals" element={<Referrals />} />
+            <Route path="waitlist" element={<Waitlist />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="settings" element={<Settings />} />
           </Route>

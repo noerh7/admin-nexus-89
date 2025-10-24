@@ -12,6 +12,7 @@ import {
   transactionService, 
   activityService, 
   statsService,
+  waitlistService,
   supabase 
 } from '../supabase';
 
@@ -954,6 +955,129 @@ router.post('/activities/conversion', async (req, res) => {
     res.status(201).json({ success: true, message: 'Conversion enregistrée avec succès' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Erreur lors de l\'enregistrement de la conversion' });
+  }
+});
+
+// ============================================================================
+// ROUTES WAITLIST
+// ============================================================================
+
+// GET /api/waitlist - Récupérer toutes les entrées de waitlist
+router.get('/waitlist', async (req, res) => {
+  try {
+    const entries = await waitlistService.getAllWaitlistEntries();
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la récupération des entrées de waitlist' });
+  }
+});
+
+// GET /api/waitlist/:id - Récupérer une entrée de waitlist par ID
+router.get('/waitlist/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const entry = await waitlistService.getWaitlistEntryById(id);
+    if (!entry) {
+      return res.status(404).json({ success: false, error: 'Entrée de waitlist non trouvée' });
+    }
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la récupération de l\'entrée de waitlist' });
+  }
+});
+
+// POST /api/waitlist - Créer une nouvelle entrée de waitlist
+router.post('/waitlist', async (req, res) => {
+  try {
+    const entryData = req.body;
+    if (!entryData.email) {
+      return res.status(400).json({ success: false, error: 'Email requis' });
+    }
+    
+    // Vérifier si l'email existe déjà
+    const existingEntry = await waitlistService.getWaitlistEntryByEmail(entryData.email);
+    if (existingEntry) {
+      return res.status(400).json({ success: false, error: 'Cet email est déjà dans la waitlist' });
+    }
+    
+    const entry = await waitlistService.createWaitlistEntry(entryData);
+    if (!entry) {
+      return res.status(400).json({ success: false, error: 'Erreur lors de la création de l\'entrée de waitlist' });
+    }
+    res.status(201).json({ success: true, data: entry });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la création de l\'entrée de waitlist' });
+  }
+});
+
+// PUT /api/waitlist/:id - Mettre à jour une entrée de waitlist
+router.put('/waitlist/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const entry = await waitlistService.updateWaitlistEntry(id, updates);
+    if (!entry) {
+      return res.status(404).json({ success: false, error: 'Entrée de waitlist non trouvée' });
+    }
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la mise à jour de l\'entrée de waitlist' });
+  }
+});
+
+// PUT /api/waitlist/:id/status - Mettre à jour le statut d'une entrée de waitlist
+router.put('/waitlist/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'Statut requis' });
+    }
+    const success = await waitlistService.updateWaitlistStatus(id, status);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'Entrée de waitlist non trouvée' });
+    }
+    res.json({ success: true, message: 'Statut de l\'entrée de waitlist mis à jour' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la mise à jour du statut de l\'entrée de waitlist' });
+  }
+});
+
+// DELETE /api/waitlist/:id - Supprimer une entrée de waitlist
+router.delete('/waitlist/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await waitlistService.deleteWaitlistEntry(id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'Entrée de waitlist non trouvée' });
+    }
+    res.json({ success: true, message: 'Entrée de waitlist supprimée avec succès' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la suppression de l\'entrée de waitlist' });
+  }
+});
+
+// GET /api/waitlist/search - Rechercher des entrées de waitlist
+router.get('/waitlist/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ success: false, error: 'Paramètre de recherche requis' });
+    }
+    const entries = await waitlistService.searchWaitlistEntries(q as string);
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la recherche d\'entrées de waitlist' });
+  }
+});
+
+// GET /api/waitlist/stats - Récupérer les statistiques de la waitlist
+router.get('/waitlist/stats', async (req, res) => {
+  try {
+    const stats = await waitlistService.getWaitlistStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur lors de la récupération des statistiques de waitlist' });
   }
 });
 
