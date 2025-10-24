@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, Mail, CheckCircle, Clock, UserPlus, RefreshCw, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Search, Download, Mail, CheckCircle, Clock, UserPlus, RefreshCw, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from '@supabase/supabase-js'
 
@@ -335,10 +336,6 @@ export default function Waitlist() {
 
   // Fonction pour supprimer une entrée
   const handleDeleteEntry = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
-      return;
-    }
-
     try {
       const success = await waitlistService.deleteWaitlistEntry(id);
       
@@ -624,14 +621,59 @@ export default function Waitlist() {
                               <SelectItem value="converted">Converti</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteEntry(entry.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="sm:max-w-md">
+                              <AlertDialogHeader>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                                  </div>
+                                  <div>
+                                    <AlertDialogTitle className="text-left">
+                                      Supprimer l'entrée
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-left mt-1">
+                                      Cette action est irréversible. L'entrée sera définitivement supprimée de la base de données.
+                                    </AlertDialogDescription>
+                                  </div>
+                                </div>
+                              </AlertDialogHeader>
+                              <div className="bg-gray-50 rounded-lg p-4 mt-4">
+                                <div className="text-sm text-gray-600">
+                                  <div className="font-medium text-gray-900 mb-1">Email :</div>
+                                  <div className="font-mono text-sm">{entry.email}</div>
+                                  <div className="font-medium text-gray-900 mt-2 mb-1">Statut :</div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={statusConfig[entry.status].color}>
+                                      <StatusIcon className="h-3 w-3 mr-1" />
+                                      {statusConfig[entry.status].label}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <AlertDialogFooter className="gap-2 sm:gap-0">
+                                <AlertDialogCancel className="mt-0">
+                                  Annuler
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Supprimer définitivement
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
