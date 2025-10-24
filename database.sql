@@ -373,6 +373,16 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.waitlist (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email character varying NOT NULL UNIQUE,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'notified'::character varying, 'converted'::character varying]::text[])),
+  source character varying DEFAULT 'website'::character varying,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  CONSTRAINT waitlist_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.wallet_transactions (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid,
