@@ -42,6 +42,7 @@ interface Announcement {
   end_date?: string;
   created_at: string;
   updated_at: string;
+  views?: number;
 }
 
 interface AnnouncementFormData {
@@ -198,7 +199,7 @@ export default function Announcements() {
           <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
           <p className="text-muted-foreground mt-1">Create and manage platform-wide announcements</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Create Announcement
         </Button>
@@ -244,7 +245,12 @@ export default function Announcements() {
         <div className="flex items-center gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search announcements..." className="pl-10" />
+            <Input 
+              placeholder="Search announcements..." 
+              className="pl-10" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
@@ -280,21 +286,21 @@ export default function Announcements() {
                   <TableCell>
                     <Badge variant="secondary">P{announcement.priority}</Badge>
                   </TableCell>
-                  <TableCell>{announcement.views.toLocaleString()}</TableCell>
+                  <TableCell>{(announcement.views || 0).toLocaleString()}</TableCell>
                   <TableCell>
-                    <Badge variant={announcement.isActive ? "default" : "secondary"}>
-                      {announcement.isActive ? "Active" : "Inactive"}
+                    <Badge variant={announcement.is_active ? "default" : "secondary"}>
+                      {announcement.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {announcement.startDate} → {announcement.endDate || "Ongoing"}
+                    {new Date(announcement.start_date).toLocaleDateString()} → {announcement.end_date ? new Date(announcement.end_date).toLocaleDateString() : "Ongoing"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(announcement)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(announcement.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -305,6 +311,115 @@ export default function Announcements() {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAnnouncement ? "Edit Announcement" : "Create New Announcement"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: 'info' | 'warning' | 'success' | 'error') => 
+                    setFormData({ ...formData, type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="info">Info</SelectItem>
+                    <SelectItem value="warning">Warning</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="content">Content</Label>
+              <Textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                required
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Input
+                  id="priority"
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date (Optional)</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => {
+                setIsDialogOpen(false);
+                setEditingAnnouncement(null);
+                resetForm();
+              }}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {editingAnnouncement ? "Update" : "Create"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
