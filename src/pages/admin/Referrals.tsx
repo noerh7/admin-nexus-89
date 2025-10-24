@@ -1,6 +1,8 @@
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, TrendingUp, DollarSign, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, UserPlus, TrendingUp, DollarSign, Users, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -10,14 +12,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { referralService } from "@/supabase";
+import { useToast } from "@/hooks/use-toast";
+
+interface ReferralData {
+  id: string;
+  referrer_id: string;
+  referred_email: string;
+  referral_code: string;
+  status: 'pending' | 'accepted' | 'completed';
+  bonus_earned: number;
+  xp_earned: number;
+  created_at: string;
+  accepted_at?: string;
+  completed_at?: string;
+  users?: { full_name: string; username: string; email: string };
+}
 
 export default function Referrals() {
-  const referrals = [
-    { id: 1, referrer: "john@example.com", referred: "alice@example.com", code: "JOHN2024", status: "completed", bonusEarned: 25.00, xpEarned: 100, date: "2024-01-15" },
-    { id: 2, referrer: "sarah@example.com", referred: "bob@example.com", code: "SARAH2024", status: "accepted", bonusEarned: 0, xpEarned: 0, date: "2024-01-20" },
-    { id: 3, referrer: "mike@example.com", referred: "charlie@example.com", code: "MIKE2024", status: "pending", bonusEarned: 0, xpEarned: 0, date: "2024-01-22" },
-    { id: 4, referrer: "emma@example.com", referred: "david@example.com", code: "EMMA2024", status: "completed", bonusEarned: 25.00, xpEarned: 100, date: "2024-01-18" },
-  ];
+  const [referrals, setReferrals] = useState<ReferralData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
 
   const statusColors = {
     pending: "secondary",

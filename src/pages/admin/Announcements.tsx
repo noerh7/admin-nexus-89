@@ -1,7 +1,8 @@
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, Bell, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Bell, AlertCircle, CheckCircle, Info, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -11,21 +12,184 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { announcementService } from "@/supabase";
+import { useToast } from "@/hooks/use-toast";
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  priority: number;
+  is_active: boolean;
+  start_date: string;
+  end_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AnnouncementFormData {
+  title: string;
+  content: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  priority: number;
+  is_active: boolean;
+  start_date: string;
+  end_date: string;
+}
 
 export default function Announcements() {
-  const announcements = [
-    { id: 1, title: "Platform Update", type: "info", priority: 1, isActive: true, views: 1250, startDate: "2024-01-15", endDate: "2024-02-15" },
-    { id: 2, title: "New Rewards Available", type: "success", priority: 2, isActive: true, views: 890, startDate: "2024-01-20", endDate: null },
-    { id: 3, title: "Maintenance Scheduled", type: "warning", priority: 3, isActive: true, views: 2100, startDate: "2024-01-10", endDate: "2024-01-12" },
-    { id: 4, title: "Important Security Update", type: "error", priority: 5, isActive: false, views: 3200, startDate: "2024-01-05", endDate: "2024-01-08" },
-  ];
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [formData, setFormData] = useState<AnnouncementFormData>({
+    title: "",
+    content: "",
+    type: "info",
+    priority: 1,
+    is_active: true,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: "",
+  });
+  const { toast } = useToast();
 
   const typeIcons = {
     info: { icon: Info, color: "bg-blue-500/10 text-blue-500" },
-    success: { icon: CheckCircle, color: "bg-admin-success/10 text-admin-success" },
-    warning: { icon: AlertCircle, color: "bg-admin-warning/10 text-admin-warning" },
-    error: { icon: AlertCircle, color: "bg-admin-danger/10 text-admin-danger" },
+    success: { icon: CheckCircle, color: "bg-green-500/10 text-green-500" },
+    warning: { icon: AlertCircle, color: "bg-yellow-500/10 text-yellow-500" },
+    error: { icon: AlertCircle, color: "bg-red-500/10 text-red-500" },
   };
+
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
+
+  const loadAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const data = await announcementService.getAllAnnouncements();
+      setAnnouncements(data);
+    } catch (error) {
+      console.error("Error loading announcements:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les annonces",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingAnnouncement) {
+        await announcementService.updateAnnouncement(editingAnnouncement.id, formData);
+        toast({
+          title: "Succès",
+          description: "Annonce mise à jour avec succès",
+        });
+      } else {
+        await announcementService.createAnnouncement(formData);
+        toast({
+          title: "Succès",
+          description: "Annonce créée avec succès",
+        });
+      }
+      setIsDialogOpen(false);
+      setEditingAnnouncement(null);
+      resetForm();
+      loadAnnouncements();
+    } catch (error) {
+      console.error("Error saving announcement:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder l'annonce",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (announcement: Announcement) => {
+    setEditingAnnouncement(announcement);
+    setFormData({
+      title: announcement.title,
+      content: announcement.content,
+      type: announcement.type,
+      priority: announcement.priority,
+      is_active: announcement.is_active,
+      start_date: announcement.start_date.split('T')[0],
+      end_date: announcement.end_date ? announcement.end_date.split('T')[0] : "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette annonce ?")) return;
+    
+    try {
+      await announcementService.deleteAnnouncement(id);
+      toast({
+        title: "Succès",
+        description: "Annonce supprimée avec succès",
+      });
+      loadAnnouncements();
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'annonce",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      content: "",
+      type: "info",
+      priority: 1,
+      is_active: true,
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: "",
+    });
+  };
+
+  const filteredAnnouncements = announcements.filter(announcement =>
+    announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    announcement.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Chargement des annonces...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

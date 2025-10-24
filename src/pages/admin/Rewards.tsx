@@ -1,7 +1,8 @@
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, Trophy } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Trophy, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -11,14 +12,53 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { rewardService, Reward } from "@/supabase";
+import { useToast } from "@/hooks/use-toast";
+
+interface RewardFormData {
+  name: string;
+  description: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  xp_required: number;
+  earnings_required: number;
+  badge_icon: string;
+  badge_color: string;
+  is_active: boolean;
+}
 
 export default function Rewards() {
-  const rewards = [
-    { id: 1, name: "First Sale", tier: "Bronze", xpRequired: 100, earningsRequired: 0, unlockedBy: 450, isActive: true },
-    { id: 2, name: "Top Performer", tier: "Silver", xpRequired: 1000, earningsRequired: 500, unlockedBy: 180, isActive: true },
-    { id: 3, name: "Elite Creator", tier: "Gold", xpRequired: 5000, earningsRequired: 2500, unlockedBy: 45, isActive: true },
-    { id: 4, name: "Master Affiliate", tier: "Platinum", xpRequired: 10000, earningsRequired: 10000, unlockedBy: 12, isActive: true },
-  ];
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<Reward | null>(null);
+  const [formData, setFormData] = useState<RewardFormData>({
+    name: "",
+    description: "",
+    tier: "bronze",
+    xp_required: 0,
+    earnings_required: 0,
+    badge_icon: "trophy",
+    badge_color: "#FFD700",
+    is_active: true,
+  });
+  const { toast } = useToast();
 
   const tierColors = {
     Bronze: "bg-orange-500/10 text-orange-500",

@@ -12,7 +12,19 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  List
+  List,
+  MessageSquare,
+  BarChart3,
+  Star,
+  Target,
+  Cog,
+  Shield,
+  Heart,
+  MousePointer,
+  TrendingUp,
+  Calendar,
+  Award,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +46,9 @@ const navItems = [
   { name: "Referrals", href: "/admin/referrals", icon: UserPlus },
   { name: "Waitlist", href: "/admin/waitlist", icon: List },
   { name: "Transactions", href: "/admin/transactions", icon: CreditCard },
+  { name: "Testimonials", href: "/admin/testimonials", icon: MessageSquare },
+  { name: "Notifications", href: "/admin/notifications", icon: Bell },
+  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

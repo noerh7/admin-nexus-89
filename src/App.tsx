@@ -17,6 +17,9 @@ import Announcements from "./pages/admin/Announcements";
 import Referrals from "./pages/admin/Referrals";
 import Waitlist from "./pages/admin/Waitlist";
 import Transactions from "./pages/admin/Transactions";
+import Testimonials from "./pages/admin/Testimonials";
+import Notifications from "./pages/admin/Notifications";
+import Analytics from "./pages/admin/Analytics";
 import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
@@ -41,6 +44,9 @@ const App = () => (
             <Route path="referrals" element={<Referrals />} />
             <Route path="waitlist" element={<Waitlist />} />
             <Route path="transactions" element={<Transactions />} />
+            <Route path="testimonials" element={<Testimonials />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
